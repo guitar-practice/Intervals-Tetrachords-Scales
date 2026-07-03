@@ -127,6 +127,14 @@ body { display:flex; flex-direction:column; align-items:center; padding:2.4rem 1
 .chip.on.violet { background:var(--violet-soft); border-color:var(--violet); color:var(--violet); }
 .chip.on.teal   { background:var(--teal-soft);   border-color:var(--teal);   color:var(--teal); }
 
+  .teal-action{
+    border-color: var(--teal);
+    color: var(--teal);
+}
+
+.teal-action:hover{
+    background: var(--teal-soft);
+}
 .dir-row { display:flex; gap:.4rem; }
 .dir-chip { flex:1; font-family:'Inter',sans-serif; font-size:.65rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase; padding:.38rem 0; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--text3); cursor:pointer; transition:all .12s; user-select:none; }
 .dir-chip.on { background:var(--amber-soft); border-color:var(--amber); color:var(--amber); }
@@ -150,10 +158,27 @@ body { display:flex; flex-direction:column; align-items:center; padding:2.4rem 1
 .tc-pair-box.show { animation:noteIn .3s ease both; opacity:1; }
 .tc-pair-name { font-family:'Playfair Display',serif; font-weight:700; font-size:clamp(.95rem,4vw,1.2rem); color:var(--violet); line-height:1.1; text-align:center; }
 .tc-pair-formula { font-family:'DM Mono',monospace; font-size:.52rem; letter-spacing:.1em; color:var(--text3); }
-.tc-pair-connector { display:flex; flex-direction:column; align-items:center; gap:.15rem; opacity:0; transition:opacity .3s; margin-bottom:.3rem; }
-.tc-pair-connector.show { opacity:1; }
-.tc-pair-plus { font-family:'DM Mono',monospace; font-size:.9rem; color:var(--text3); line-height:1; }
-.tc-pair-step { font-family:'DM Mono',monospace; font-size:.52rem; letter-spacing:.1em; color:var(--text3); }
+.tc-pair-connector {
+  display:flex;
+  align-items:center;
+  gap:.35rem;
+  opacity:0;
+  transition:opacity .3s;
+}
+
+.tc-pair-arrow {
+  font-size:1rem;
+  color:var(--text3);
+  line-height:1;
+}
+
+.tc-pair-step {
+  font-family:'DM Mono', monospace;
+  font-size:.7rem;
+  font-weight:600;
+  letter-spacing:.08em;
+  color:var(--text2);
+}
 .tc-pair-none { font-family:'Playfair Display',serif; font-style:italic; font-size:.8rem; color:var(--text3); margin-top:.8rem; text-align:center; }
 
 footer { margin-top:2rem; font-family:'DM Mono',monospace; font-size:.52rem; letter-spacing:.2em; text-transform:uppercase; color:var(--text3); }
@@ -341,11 +366,20 @@ footer { margin-top:2rem; font-family:'DM Mono',monospace; font-size:.52rem; let
   <div class="settings-card">
     <div class="settings-header">Settings</div>
     <div class="settings-body">
-      <div class="setting-row">
-        <span class="setting-label">Scales</span>
-        <div class="chip-row" id="sc-scale-chips"></div>
-        <div class="error-msg" id="sc-error">Select at least one scale.</div>
-      </div>
+    <div class="setting-row">
+    <span class="setting-label">Scales</span>
+
+    <div class="chip-row" style="margin-bottom:.45rem;">
+        <button class="chip teal-action" id="sc-select-all">Select All</button>
+        <button class="chip teal-action" id="sc-clear">Clear</button>
+    </div>
+
+    <div class="chip-row" id="sc-scale-chips"></div>
+
+    <div class="error-msg" id="sc-error">
+        Select at least one scale.
+    </div>
+</div>
       <div class="setting-row">
         <span class="setting-label">Root notes</span>
         <div class="chip-row" id="sc-root-chips"></div>
@@ -710,6 +744,28 @@ SCALES.forEach(sc => {
   scRefEl.appendChild(row);
 });
 
+  document.getElementById('sc-select-all').onclick = () => {
+
+    scActive = new Set(SCALES.map(s => s.abbr));
+
+    [...scScaleEl.children].forEach(chip =>
+        chip.classList.add('on','teal')
+    );
+
+    document.getElementById('sc-error').style.display='none';
+};
+
+document.getElementById('sc-clear').onclick = () => {
+
+    scActive.clear();
+
+    [...scScaleEl.children].forEach(chip =>
+        chip.classList.remove('on','teal')
+    );
+
+    document.getElementById('sc-error').style.display='block';
+};
+
 /* ══════════════════════════════════════════
    HELPERS
    ══════════════════════════════════════════ */
@@ -931,27 +987,32 @@ function generateScale() {
     }
 
     const { lower, step, upper } = sc.tcPair;
-    const stepLabel = step === 'W' ? 'whole step' : 'half step';
+const stepLabel = step === 'W' ? 'whole step' : 'half step';
 
-    // Lower tetrachord box
-    const lBox = document.createElement('div');
-    lBox.className='tc-pair-box';
-    lBox.innerHTML=`<span class="tc-pair-name">${lower}</span>
-      <span class="tc-pair-formula">degrees 1–4</span>`;
-    wrap.appendChild(lBox);
+// Look up the tetrachord definitions
+const lowerTC = TETRACHORDS.find(t => t.name === lower);
+const upperTC = TETRACHORDS.find(t => t.name === upper);
 
-    // Connector
-    const conn = document.createElement('div');
-    conn.className='tc-pair-connector';
-    conn.innerHTML=`<span class="tc-pair-plus">+</span>
-      <span class="tc-pair-step">${stepLabel}</span>`;
-    wrap.appendChild(conn);
+// Lower tetrachord
+const lBox = document.createElement('div');
+lBox.className='tc-pair-box';
+lBox.innerHTML=`<span class="tc-pair-name">${lower}</span>
+  <span class="tc-pair-formula">${lowerTC.formula}</span>`;
+wrap.appendChild(lBox);
 
-    // Upper tetrachord box
-    const uBox = document.createElement('div');
-    uBox.className='tc-pair-box';
-    uBox.innerHTML=`<span class="tc-pair-name">${upper}</span>
-      <span class="tc-pair-formula">degrees 5–8</span>`;
+// Connector
+const conn = document.createElement('div');
+conn.className='tc-pair-connector';
+conn.innerHTML=`<span class="tc-pair-arrow">→</span>
+<span class="tc-pair-step">${step === 'W' ? 'W' : 'H'}</span>`;
+wrap.appendChild(conn);
+
+// Upper tetrachord
+const uBox = document.createElement('div');
+uBox.className='tc-pair-box';
+uBox.innerHTML=`<span class="tc-pair-name">${upper}</span>
+  <span class="tc-pair-formula">${upperTC.formula}</span>`;
+wrap.appendChild(uBox);
     wrap.appendChild(uBox);
 
     // Staggered animation
